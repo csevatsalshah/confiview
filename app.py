@@ -23,8 +23,15 @@ except FileNotFoundError:
     st.error("Video processing tool not found. Please ensure it’s installed and accessible.")
     st.stop()
 
-# Get API key from Streamlit secrets (safer for deployment)
-API_KEY = st.secrets["GEMINI_API_KEY"]  # Replace with hardcoded key for local testing if needed
+# Get API key from Streamlit secrets with fallback for local testing
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+except KeyError:
+    st.error("API key not found in secrets. Please set 'GEMINI_API_KEY' in Streamlit Cloud or use a hardcoded key for local testing.")
+    st.write("For local testing, uncomment the line below and replace with your key:")
+    # API_KEY = "YOUR_API_KEY_HERE"  # Hardcode for local testing only
+    st.stop()
+
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 
@@ -41,11 +48,11 @@ if video_file is not None:
         f.write(video_file.read())
     st.success("Your video is ready for review!")
 
-    # Extract audio (limit to first 20 seconds for performance)
+    # Extract audio (limit to first 10 seconds for performance)
     try:
         audio_file = "temp_audio.wav"
         audio = AudioSegment.from_file(temp_video_path, format="mp4")
-        audio = audio[:20 * 1000]  # First 20 seconds
+        audio = audio[:10 * 1000]  # First 10 seconds
         audio.export(audio_file, format="wav")
         st.success("Audio is set for evaluation!")
     except Exception as e:
@@ -105,7 +112,7 @@ if video_file is not None:
                 verbal_score = 50
             st.write(f"Answer review completed in {time.time() - start_time:.2f} seconds")
 
-            # Posture, eye contact, and gestures analysis (optimized: sample every 30th frame)
+            # Posture, eye contact, and gestures analysis (optimized)
             st.write("Looking at your body language...")
             start_time = time.time()
             try:
@@ -154,7 +161,7 @@ if video_file is not None:
                 posture_score = eye_contact_score = gesture_score = 50
             st.write(f"Body language review completed in {time.time() - start_time:.2f} seconds")
 
-            # Tone, speech rate, and enthusiasm analysis (optimized)
+            # Tone, speech rate, and enthusiasm analysis
             st.write("Listening to your voice...")
             start_time = time.time()
             try:
