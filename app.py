@@ -18,7 +18,7 @@ import threading
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 
-# Configure Streamlit to disable usage statistics (for Render)
+# Configure Streamlit to disable usage statistics (for Streamlit Cloud)
 st.set_option('browser.gatherUsageStats', False)
 
 # Initialize pyannote.audio pipeline (for speaker diarization) with robust error handling
@@ -32,7 +32,7 @@ except Exception as e:
     st.error(f"Warning: Speaker diarization failed to initialize: {str(e)}. Continuing with basic transcription.")
     st.write("Analysis will proceed without speaker separation, treating the transcript as multiple Q&A pairs.")
 
-# Get API key from environment variable (Render or local fallback)
+# Get API key from environment variable (Streamlit Cloud or local fallback)
 API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyB8aJR3kyZlTQ5rB928gDt4qMYQH5SQhhM")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-pro')
@@ -66,12 +66,11 @@ def normalize_text(text):
 # Streamlit UI with color
 st.title("ConfiView - Your Interview Coach", help="Upload your interview video for detailed analysis")
 
-# Get port from environment variable (Render or default to 8501 for local testing)
+# Get port from environment variable (Streamlit Cloud or default to 8501 for local testing)
 port = int(os.getenv("PORT", 8501))
 
-# Bind Streamlit to 0.0.0.0 and the specified port
-st.server.port = port
-st.server.address = "0.0.0.0"
+# Bind Streamlit to 0.0.0.0 and the specified port (handled automatically by Streamlit Cloud)
+# No need to set st.server.port/address manually here, as Streamlit Cloud manages it
 
 # Upload video
 video_file = st.file_uploader("Upload Your Interview Video (MP4)", type=["mp4"], help="Supports MP4 files up to 10 minutes")
@@ -353,7 +352,7 @@ if video_file is not None:
                 processed_frames += 1
 
             progress_bar.progress(100, text=f"Question {idx} Body Language Analysis... 100%")
-            posture_score = max(50, min(950, (posture_score / processed_frames) * 1000 if processed_frames > 0 else 500))  # Direct out of 1000, fixed syntax
+            posture_score = max(50, min(950, (posture_score / processed_frames) * 1000 if processed_frames > 0 else 500))  # Direct out of 1000
             eye_contact_score = max(50, min(950, (eye_contact_score / processed_frames) * 1000 if processed_frames > 0 else 500))
             gesture_score = max(50, min(950, 500 + ((hand_movement / processed_frames) * 1000 - (fidget_count / processed_frames * 500)) if processed_frames > 0 else 500))
             head_tilt_score = max(50, min(950, (head_tilt_score / processed_frames) * 1000 if processed_frames > 0 else 500))

@@ -1,4 +1,4 @@
-streamlit
+streamlit==1.29.0
 google-generativeai
 opencv-python-headless
 mediapipe
@@ -7,5 +7,5 @@ SpeechRecognition
 pydub
 plotly
 pyannote.audio
-torch
-torchaudio
+torch==2.1.2
+torchaudio==2.1.2
