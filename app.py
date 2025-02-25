@@ -23,7 +23,7 @@ except FileNotFoundError:
     st.error("Video processing tool not found. Please ensure it’s installed and accessible.")
     st.stop()
 
-# Get API key from Streamlit secrets with fallback for local testing
+# Get API key from Streamlit secrets with fallback for local testing or missing secrets
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
 except KeyError:
