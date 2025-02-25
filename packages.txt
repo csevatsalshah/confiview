@@ -1,0 +1,5 @@
+ffmpeg                  # For pydub audio processing
+libsm6                  # OpenCV dependencies
+libxext6
+libxrender-dev
+libglib2.0-0            # Required for OpenCV in some cases
