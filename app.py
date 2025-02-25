@@ -18,6 +18,9 @@ import threading
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 
+# Configure Streamlit to disable usage statistics (for Render)
+st.set_option('browser.gatherUsageStats', False)
+
 # Initialize pyannote.audio pipeline (for speaker diarization) with robust error handling
 diarization_pipeline = None
 try:
@@ -64,7 +67,7 @@ def normalize_text(text):
 st.title("ConfiView - Your Interview Coach", help="Upload your interview video for detailed analysis")
 
 # Get port from environment variable (Render or default to 8501 for local testing)
-port = os.getenv("PORT", 8501)
+port = int(os.getenv("PORT", 8501))
 
 # Upload video
 video_file = st.file_uploader("Upload Your Interview Video (MP4)", type=["mp4"], help="Supports MP4 files up to 10 minutes")
