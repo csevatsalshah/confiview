@@ -23,8 +23,8 @@ except FileNotFoundError:
     st.error("Video processing tool not found. Please ensure it’s installed and accessible.")
     st.stop()
 
-# Gemini API setup
-API_KEY = "AIzaSyB8aJR3kyZlTQ5rB928gDt4qMYQH5SQhhM"
+# Get API key from Streamlit secrets (safer for deployment)
+API_KEY = st.secrets["GEMINI_API_KEY"]  # Replace with hardcoded key for local testing if needed
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 
@@ -41,10 +41,11 @@ if video_file is not None:
         f.write(video_file.read())
     st.success("Your video is ready for review!")
 
-    # Extract audio
+    # Extract audio (limit to first 20 seconds for performance)
     try:
         audio_file = "temp_audio.wav"
         audio = AudioSegment.from_file(temp_video_path, format="mp4")
+        audio = audio[:20 * 1000]  # First 20 seconds
         audio.export(audio_file, format="wav")
         st.success("Audio is set for evaluation!")
     except Exception as e:
@@ -104,7 +105,7 @@ if video_file is not None:
                 verbal_score = 50
             st.write(f"Answer review completed in {time.time() - start_time:.2f} seconds")
 
-            # Posture and body language analysis
+            # Posture, eye contact, and gestures analysis (optimized: sample every 30th frame)
             st.write("Looking at your body language...")
             start_time = time.time()
             try:
@@ -114,8 +115,8 @@ if video_file is not None:
                 face = mp_face.FaceDetection(min_detection_confidence=0.5)
                 cap = cv2.VideoCapture(temp_video_path)
                 posture_score, eye_contact_score, gesture_score, frame_count, processed_frames = 0, 0, 0, 0, 0
-                frame_interval = 15
-                hand_movement = 0  # Track gesture frequency
+                frame_interval = 30  # Sample every 30th frame for better performance
+                hand_movement = 0
                 while cap.isOpened():
                     ret, frame = cap.read()
                     if not ret:
@@ -131,7 +132,7 @@ if video_file is not None:
                             head_y = pose_results.pose_landmarks.landmark[mp_pose.PoseLandmark.NOSE].y
                             spine_angle = abs(left_shoulder.y - head_y)
                             shoulder_diff = abs(left_shoulder.y - right_shoulder.y)
-                            if spine_angle < 0.3 and shoulder_diff < 0.1:  # Upright and aligned
+                            if spine_angle < 0.3 and shoulder_diff < 0.1:
                                 posture_score += 1
                             # Hand gestures
                             left_hand = pose_results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_WRIST].y
@@ -144,7 +145,7 @@ if video_file is not None:
                         processed_frames += 1
                 posture_score = min(95, (posture_score / processed_frames) * 100 if processed_frames > 0 else 0)
                 eye_contact_score = min(95, (eye_contact_score / processed_frames) * 100 if processed_frames > 0 else 0)
-                gesture_score = min(95, 50 + (hand_movement / processed_frames * 10) if processed_frames > 0 else 50)  # Moderate gestures are good
+                gesture_score = min(95, 50 + (hand_movement / processed_frames * 10) if processed_frames > 0 else 50)
                 cap.release()
                 pose.close()
                 face.close()
@@ -153,11 +154,11 @@ if video_file is not None:
                 posture_score = eye_contact_score = gesture_score = 50
             st.write(f"Body language review completed in {time.time() - start_time:.2f} seconds")
 
-            # Tone and speech analysis
+            # Tone, speech rate, and enthusiasm analysis (optimized)
             st.write("Listening to your voice...")
             start_time = time.time()
             try:
-                y, sr = librosa.load(audio_file, duration=20)
+                y, sr = librosa.load(audio_file, duration=10)  # First 10 seconds for speed
                 pauses = len(librosa.effects.split(y))
                 speech_rate = len(answer.split()) / (len(y) / sr)  # Words per second
                 pitch_mean = np.mean(librosa.pitch_tuning(y))
