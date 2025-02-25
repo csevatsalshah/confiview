@@ -6,3 +6,4 @@ librosa
 SpeechRecognition
 pydub
 plotly
+pyannote.audio
