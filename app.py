@@ -60,6 +60,8 @@ def normalize_text(text):
     for i, word in enumerate(words):
         if i > 0 and word.lower() == cleaned_words[-1].lower():
             continue  # Skip repeated words
+        # Correct common transcription errors (e.g., "youre" to "you're", "im" to "I'm")
+        word = word.replace("youre", "you're").replace("im", "I'm").replace("dont", "don't").replace("cant", "can't")
         cleaned_words.append(word)
     return " ".join(cleaned_words).strip()
 
@@ -126,22 +128,22 @@ if video_file is not None:
                                     time.sleep(0.5)  # Shorter wait for faster retries
                     os.remove(f"temp_chunk_{i}.wav")
                 progress = int((i + 1) / chunk_count * 30)  # 30% for transcription
-                progress_bar.progress(progress)
+                progress_bar.progress(progress, text=f"Transcription... {progress}%")
         full_text = " ".join(full_transcript).strip()
         full_text = normalize_text(full_text)  # Normalize transcript for readability
         st.write(f"Full transcript: <span style='color: #2ecc71'>{full_text}</span>", unsafe_allow_html=True)
-        progress_bar.progress(30)  # Transcription complete
+        progress_bar.progress(30, text="Transcription... 100%")  # Transcription complete
     except Exception as e:
         st.error(f"Error in transcription: {str(e)}", icon="❌")
         full_text = "Could not understand audio"
         st.write(f"Full transcript: <span style='color: #e74c3c'>{full_text}</span>", unsafe_allow_html=True)
-        progress_bar.progress(30)  # Fallback complete
+        progress_bar.progress(30, text="Transcription... 100%")  # Fallback complete
 
     # Attempt speaker diarization if pipeline is available
     if diarization_pipeline is not None:
         try:
             waveform, sample_rate = librosa.load(audio_file, sr=None)
-            progress_bar.progress(40)  # 40% complete
+            progress_bar.progress(40, text="Speaker Diarization... 33%")
             diarization = diarization_pipeline({"waveform": waveform, "sample_rate": sample_rate})
             # Convert diarization to timeline of speakers
             speakers = {}
@@ -149,14 +151,14 @@ if video_file is not None:
                 if label not in speakers:
                     speakers[label] = []
                 speakers[label].append((segment.start, segment.end))
-            progress_bar.progress(50)  # 50% complete
+            progress_bar.progress(50, text="Speaker Diarization... 100%")  # 50% complete
         except Exception as e:
             st.error(f"Error in speaker diarization: {str(e)}", icon="⚠️")
             diarization = None
 
     # Identify all questions and answers using Gemini with maximum accuracy and valid Python output
     st.write("Identifying all questions and answers...")
-    progress_bar.progress(60)  # 60% complete
+    progress_bar.progress(60, text="Q&A Identification... 50%")
     try:
         qa_analysis_prompt = f"""
         Here’s a transcript of an interview conversation, which may include multiple turns, unclear speech, interruptions, or partial responses:
@@ -183,11 +185,12 @@ if video_file is not None:
             st.error("Error parsing Q&A pairs: Gemini response not in expected format. Falling back to basic extraction.", icon="⚠️")
             qa_pairs = _extract_basic_qa_pairs(full_text)
         st.write(f"Identified <span style='color: #3498db'>{len(qa_pairs)}</span> questions in the video. Starting detailed analysis...", unsafe_allow_html=True)
+        progress_bar.progress(70, text="Q&A Identification... 100%")
     except Exception as e:
         st.error(f"Error identifying questions and answers: {str(e)}", icon="❌")
         qa_pairs = _extract_basic_qa_pairs(full_text) if full_text else [("Could not determine question", "No transcription available")]
         st.write("Identified <span style='color: #e74c3c'>1</span> question (fallback) in the video. Starting detailed analysis...", unsafe_allow_html=True)
-    progress_bar.progress(70)  # 70% complete
+        progress_bar.progress(70, text="Q&A Identification... 100%")
 
     # Helper function for basic Q&A extraction (fallback)
     def _extract_basic_qa_pairs(transcript):
@@ -245,7 +248,7 @@ if video_file is not None:
             if "well-structured" in verbal_feedback.lower() or "organized" in verbal_feedback.lower():
                 verbal_score += 100
             if "enthusiastic" in verbal_feedback.lower() or "engaged" in verbal_feedback.lower():
-                verbal_score += 100  # Increased emphasis on enthusiasm
+                verbal_score += 150  # Increased emphasis on enthusiasm for humanized scoring
             if "[partial response]" in verbal_feedback.lower() or "[unclear]" in verbal_feedback.lower() or "[interrupted]" in verbal_feedback.lower():
                 verbal_score = max(400, verbal_score - 100)  # Penalty for ambiguity
             verbal_score = max(50, min(950, verbal_score))  # Avoid 0 or 1000, scale to 1000
@@ -345,10 +348,10 @@ if video_file is not None:
                 processed_frames += 1
 
             progress_bar.progress(100, text=f"Question {idx} Body Language Analysis... 100%")
-            posture_score = max(50, min(950, (posture_score / processed_frames) * 1000 if processed_frames > 0 else 500)))  # Direct out of 1000
-            eye_contact_score = max(50, min(950, (eye_contact_score / processed_frames) * 1000 if processed_frames > 0 else 500)))
-            gesture_score = max(50, min(950, 500 + ((hand_movement / processed_frames) * 1000 - (fidget_count / processed_frames * 500)) if processed_frames > 0 else 500)))
-            head_tilt_score = max(50, min(950, (head_tilt_score / processed_frames) * 1000 if processed_frames > 0 else 500)))
+            posture_score = max(50, min(950, (posture_score / processed_frames) * 1000 if processed_frames > 0 else 500))  # Direct out of 1000, fixed syntax
+            eye_contact_score = max(50, min(950, (eye_contact_score / processed_frames) * 1000 if processed_frames > 0 else 500))
+            gesture_score = max(50, min(950, 500 + ((hand_movement / processed_frames) * 1000 - (fidget_count / processed_frames * 500)) if processed_frames > 0 else 500))
+            head_tilt_score = max(50, min(950, (head_tilt_score / processed_frames) * 1000 if processed_frames > 0 else 500))
             cap.release()
             pose.close()
             face.close()
@@ -377,9 +380,9 @@ if video_file is not None:
             pitch_mean = np.mean(librosa.pitch_tuning(y))
             pitch_variance = np.var(librosa.pitch_tuning(y))  # Variability for enthusiasm
             # Humanized, accurate scoring out of 1000
-            tone_score = max(50, min(950, 1000 - (pauses * 15)))  # Fewer penalties, focus on natural pauses
-            speech_rate_score = max(50, min(950, 800 - abs(speech_rate - 2.5) * 300))  # Ideal ~2.5 words/sec, emphasize natural pace
-            enthusiasm_score = max(50, min(950, 600 + (pitch_mean * 200) + (pitch_variance * 150)))  # Stronger emphasis on enthusiasm, natural variation
+            tone_score = max(50, min(950, 1000 - (pauses * 15)))  # Fewer penalties, focus on natural pauses, accurate tone
+            speech_rate_score = max(50, min(950, 800 - abs(speech_rate - 2.5) * 300))  # Ideal ~2.5 words/sec, emphasize natural pace, accurate rhythm
+            enthusiasm_score = max(50, min(950, 600 + (pitch_mean * 200) + (pitch_variance * 200)))  # Stronger emphasis on enthusiasm, natural variation, accurate energy
             progress_bar.progress(100, text=f"Question {idx} Voice Analysis... 100%")
         except Exception as e:
             st.error(f"Error analyzing voice for Question {idx}: {str(e)}", icon="⚠️")
