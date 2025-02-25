@@ -1,0 +1,8 @@
+streamlit
+google-generativeai
+opencv-python
+mediapipe
+librosa
+SpeechRecognition
+pydub
+plotly
