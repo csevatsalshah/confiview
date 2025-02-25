@@ -7,3 +7,5 @@ SpeechRecognition
 pydub
 plotly
 pyannote.audio
+torch
+torchaudio

@@ -29,13 +29,8 @@ except Exception as e:
     st.error(f"Warning: Speaker diarization failed to initialize: {str(e)}. Continuing with basic transcription.")
     st.write("Analysis will proceed without speaker separation, treating the transcript as multiple Q&A pairs.")
 
-# Get API key from Streamlit secrets
-try:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-except KeyError:
-    st.error("API key not found in secrets. Please set 'GEMINI_API_KEY' in Streamlit Cloud.")
-    st.stop()
-
+# Get API key from environment variable (Render or local fallback)
+API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyB8aJR3kyZlTQ5rB928gDt4qMYQH5SQhhM")
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 
@@ -67,6 +62,9 @@ def normalize_text(text):
 
 # Streamlit UI with color
 st.title("ConfiView - Your Interview Coach", help="Upload your interview video for detailed analysis")
+
+# Get port from environment variable (Render or default to 8501 for local testing)
+port = os.getenv("PORT", 8501)
 
 # Upload video
 video_file = st.file_uploader("Upload Your Interview Video (MP4)", type=["mp4"], help="Supports MP4 files up to 10 minutes")
