@@ -21,7 +21,7 @@ try:
         use_auth_token=None  # No token needed for free model; adjust if using a private model
     )
 except Exception as e:
-    st.error(f"Error initializing speaker diarization: {str(e}}")
+    st.error(f"Error initializing speaker diarization: {str(e)}")  # Fixed: Changed '}}' to ')'
     st.stop()
 
 # Get API key from Streamlit secrets with fallback for local testing
